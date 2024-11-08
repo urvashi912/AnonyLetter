@@ -32,11 +32,11 @@ export default function Home() {
 
         websocket.onerror = (error) => {
           console.error("WebSocket error:", error);
-          toast({
-            title: "Connection Error",
-            description: "Failed to connect to the server. Retrying...",
-            variant: "destructive",
-          });
+          // toast({
+          //   title: "Connection Error",
+          //   description: "Failed to connect to the server. Retrying...",
+          //   variant: "destructive",
+          // });
         };
 
         websocket.onclose = () => {
@@ -117,7 +117,7 @@ export default function Home() {
           <Card className="p-8">
             <div className="text-center mb-8">
               <PenLine className="w-12 h-12 mx-auto mb-4 text-primary" />
-              <h1 className="text-3xl font-bold mb-2">Anonymous Letters</h1>
+              <h1 className="text-3xl font-bold mb-2">Anony Letters</h1>
               <p className="text-muted-foreground">
                 Connect with strangers through anonymous letters. Share your thoughts, stories, or just say hello!
               </p>
