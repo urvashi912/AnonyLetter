@@ -28,67 +28,43 @@ export default function Home() {
   const { toast } = useToast();
   // wss://anonyletter.onrender.com/ws
   useEffect(() => {
-    // let timeoutId: NodeJS.Timeout;
-
     if (isJoined && !ws) {
-        const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
-        
-        websocket.onopen = () => {
-          console.log("WebSocket connected");
-          websocket.send(JSON.stringify({ type: "join", name }));
-        };
-
-        // websocket.onerror = (error) => {
-        //   console.error("WebSocket error:", error);
-        // };
-
-        // websocket.onclose = () => {
-        //   console.log("WebSocket closed. Reconnecting...");
-        //   setWs(null);
-        //   // timeoutId = setTimeout(connectWebSocket, 3000);
-        // };
-
-        websocket.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-
-          switch (data.type) {
-            case "online_count":
-              setOnlineCount(data.count);
-              break;
-            case "receive_letter":
-              setReceivedLetters(prev => [data.letter, ...prev]);
-              toast(`New Letter Received! From: ${data.letter.senderName}`);
-              break;
-            case "letter_sent":
-              setSentLetters(prev => [data.letter, ...prev]);
-              toast(`Letter Sent Successfully! To: ${data.letter.recipientName}`);
-              break;
-            case "error":
-              toast(data.message);
-              break;
-          }
-        };
-
-        setWs(websocket);
-
-        return () => {
-          websocket.close();
-        };
-      
-
-      // connectWebSocket();
+      const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
+  
+      websocket.onopen = () => {
+        console.log("WebSocket connected");
+        websocket.send(JSON.stringify({ type: "join", name }));
+      };
+  
+      websocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+  
+        switch (data.type) {
+          case "online_count":
+            setOnlineCount(data.count);
+            break;
+          case "receive_letter":
+            setReceivedLetters(prev => [data.letter, ...prev]);
+            toast(`New Letter Received! From: ${data.letter.senderName}`);
+            break;
+          case "letter_sent":
+            setSentLetters(prev => [data.letter, ...prev]);
+            toast(`Letter Sent Successfully! To: ${data.letter.recipientName}`);
+            break;
+          case "error":
+            toast(data.message);
+            break;
+        }
+      };
+  
+      setWs(websocket);
+  
+      return () => {
+        websocket.close(); // Clean up when component unmounts
+      };
     }
-
-    // return () => {
-    //   if (timeoutId) {
-    //     clearTimeout(timeoutId);
-    //   }
-    //   if (ws) {
-    //     ws.close();
-    //   }
-    // };
   }, [isJoined, name, toast]);
-
+  
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
