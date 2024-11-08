@@ -1,8 +1,18 @@
 const WebSocket = require('ws');
 const { createServer } = require('http');
 const { parse } = require('url');
+const express = require('express');
 
-const server = createServer();
+// Create an Express app to serve HTTP requests
+const app = express();
+
+// Serve static files or set up your routes
+app.get('/', (req, res) => {
+  res.send('Hello, WebSocket server is running!');
+});
+
+const server = createServer(app); // Use Express app with HTTP server
+
 const wss = new WebSocket.Server({ noServer: true });
 
 const onlineUsers = new Map();
@@ -79,6 +89,7 @@ wss.on('connection', (ws) => {
   }
 });
 
+// Handle WebSocket upgrades (ensure it's handled after HTTP server)
 server.on('upgrade', (request, socket, head) => {
   const { pathname } = parse(request.url);
 
@@ -93,5 +104,5 @@ server.on('upgrade', (request, socket, head) => {
 
 const port = process.env.PORT || 3001;
 server.listen(port, () => {
-  console.log(`WebSocket server is running on port ${port}`);
+  console.log(`WebSocket and HTTP server is running on port ${port}`);
 });
