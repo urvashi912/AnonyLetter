@@ -26,7 +26,6 @@ export default function Home() {
   const [receivedLetters, setReceivedLetters] = useState<Letter[]>([]);
   const [sentLetters, setSentLetters] = useState<Letter[]>([]);
   const { toast } = useToast();
-  wss://anonyletter.onrender.com/ws
   useEffect(() => {
     if (isJoined && !ws) {
       const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
@@ -63,7 +62,7 @@ export default function Home() {
         websocket.close();
       };
     }
-  }, [isJoined, name, toast]);
+  }, [isJoined, name, toast,ws]);
 
 
   const handleJoin = (e: React.FormEvent) => {
