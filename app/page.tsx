@@ -32,7 +32,7 @@ export default function Home() {
 
     if (isJoined && !ws) {
       const connectWebSocket = () => {
-        const websocket = new WebSocket("ws:https://anonyletter.onrender.com/");
+        const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
         
         websocket.onopen = () => {
           console.log("WebSocket connected");
