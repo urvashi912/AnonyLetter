@@ -26,29 +26,34 @@ export default function Home() {
   const [receivedLetters, setReceivedLetters] = useState<Letter[]>([]);
   const [sentLetters, setSentLetters] = useState<Letter[]>([]);
   const { toast } = useToast();
-  // wss://anonyletter.onrender.com/ws
-  useEffect(() => {
-    if (isJoined && !ws) {
-      const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
   
+  // Function to check if the WebSocket is open
+  const isOpen = (ws: WebSocket | null) => {
+    return ws && ws.readyState === WebSocket.OPEN;
+  };
+
+  // Function to attempt reconnection when the WebSocket is closed
+  const reconnectWebSocket = () => {
+    if (ws?.readyState === WebSocket.CLOSED || ws?.readyState === WebSocket.CLOSING) {
+      const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
       websocket.onopen = () => {
         console.log("WebSocket connected");
         websocket.send(JSON.stringify({ type: "join", name }));
       };
-  
+
       websocket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-  
+
         switch (data.type) {
           case "online_count":
             setOnlineCount(data.count);
             break;
           case "receive_letter":
-            setReceivedLetters(prev => [data.letter, ...prev]);
+            setReceivedLetters((prev) => [data.letter, ...prev]);
             toast(`New Letter Received! From: ${data.letter.senderName}`);
             break;
           case "letter_sent":
-            setSentLetters(prev => [data.letter, ...prev]);
+            setSentLetters((prev) => [data.letter, ...prev]);
             toast(`Letter Sent Successfully! To: ${data.letter.recipientName}`);
             break;
           case "error":
@@ -56,15 +61,50 @@ export default function Home() {
             break;
         }
       };
-  
+
       setWs(websocket);
-  
+    }
+  };
+
+  // Set up WebSocket connection when the user joins
+  useEffect(() => {
+    if (isJoined && !ws) {
+      const websocket = new WebSocket("wss://anonyletter.onrender.com/ws");
+      websocket.onopen = () => {
+        console.log("WebSocket connected");
+        websocket.send(JSON.stringify({ type: "join", name }));
+      };
+
+      websocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case "online_count":
+            setOnlineCount(data.count);
+            break;
+          case "receive_letter":
+            setReceivedLetters((prev) => [data.letter, ...prev]);
+            toast(`New Letter Received! From: ${data.letter.senderName}`);
+            break;
+          case "letter_sent":
+            setSentLetters((prev) => [data.letter, ...prev]);
+            toast(`Letter Sent Successfully! To: ${data.letter.recipientName}`);
+            break;
+          case "error":
+            toast(data.message);
+            break;
+        }
+      };
+
+      setWs(websocket);
+
       return () => {
-        websocket.close(); // Clean up when component unmounts
+        websocket.close();
       };
     }
-  }, [isJoined, name, toast]);
-  
+  }, [isJoined, name, toast, ws]);
+
+  // Join handler for user
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
@@ -72,13 +112,20 @@ export default function Home() {
     }
   };
 
+  // Send letter handler with WebSocket connection check
   const handleSendLetter = () => {
-    if (letter.trim() && ws) {
-      ws.send(JSON.stringify({
-        type: "letter",
-        content: letter,
-      }));
+    if (letter.trim() && ws && isOpen(ws)) {
+      ws.send(
+        JSON.stringify({
+          type: "letter",
+          content: letter,
+        })
+      );
       setLetter("");
+    } else if (ws) {
+      // Attempt to reconnect if WebSocket is not open
+      reconnectWebSocket();
+      toast("Reconnecting WebSocket...");
     }
   };
 
