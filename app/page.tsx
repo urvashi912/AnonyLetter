@@ -6,9 +6,16 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
+import { Card as CardComponent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PenLine, Send, Users } from "lucide-react";
+
+interface Letter {
+  id: string;
+  content: string;
+  senderName: string;
+  recipientName: string;
+}
 
 export default function Home() {
   const [name, setName] = useState("");
@@ -16,11 +23,13 @@ export default function Home() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
   const [letter, setLetter] = useState("");
-  const [receivedLetters, setReceivedLetters] = useState<any[]>([]);
-  const [sentLetters, setSentLetters] = useState<any[]>([]);
+  const [receivedLetters, setReceivedLetters] = useState<Letter[]>([]);
+  const [sentLetters, setSentLetters] = useState<Letter[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     if (isJoined && !ws) {
       const connectWebSocket = () => {
         const websocket = new WebSocket("ws://localhost:3001/ws");
@@ -32,18 +41,12 @@ export default function Home() {
 
         websocket.onerror = (error) => {
           console.error("WebSocket error:", error);
-          // toast({
-          //   title: "Connection Error",
-          //   description: "Failed to connect to the server. Retrying...",
-          //   variant: "destructive",
-          // });
         };
 
         websocket.onclose = () => {
           console.log("WebSocket closed. Reconnecting...");
           setWs(null);
-          // Attempt to reconnect after 3 seconds
-          setTimeout(connectWebSocket, 3000);
+          timeoutId = setTimeout(connectWebSocket, 3000);
         };
 
         websocket.onmessage = (event) => {
@@ -55,24 +58,14 @@ export default function Home() {
               break;
             case "receive_letter":
               setReceivedLetters(prev => [data.letter, ...prev]);
-              toast({
-                title: "New Letter Received!",
-                description: `From: ${data.letter.senderName}`,
-              });
+              toast(`New Letter Received! From: ${data.letter.senderName}`);
               break;
             case "letter_sent":
               setSentLetters(prev => [data.letter, ...prev]);
-              toast({
-                title: "Letter Sent Successfully!",
-                description: `To: ${data.letter.recipientName}`,
-              });
+              toast(`Letter Sent Successfully! To: ${data.letter.recipientName}`);
               break;
             case "error":
-              toast({
-                title: "Error",
-                description: data.message,
-                variant: "destructive",
-              });
+              toast(data.message);
               break;
           }
         };
@@ -86,7 +79,16 @@ export default function Home() {
 
       connectWebSocket();
     }
-  }, [isJoined, name, toast]);
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [isJoined, name, toast, ws]);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +116,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="max-w-md w-full"
         >
-          <Card className="p-8">
+          <CardComponent className="p-8">
             <div className="text-center mb-8">
               <PenLine className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h1 className="text-3xl font-bold mb-2">Anony Letters</h1>
@@ -135,7 +137,7 @@ export default function Home() {
                 Start Writing
               </Button>
             </form>
-          </Card>
+          </CardComponent>
         </motion.div>
       </div>
     );
@@ -158,7 +160,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="p-6">
+            <CardComponent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Write a Letter</h2>
               <div className="space-y-4">
                 <Textarea
@@ -176,7 +178,7 @@ export default function Home() {
                   Send to Random Person
                 </Button>
               </div>
-            </Card>
+            </CardComponent>
           </motion.div>
 
           <motion.div
@@ -184,20 +186,20 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="p-6">
+            <CardComponent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Your Letters</h2>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => document.getElementById("received")?.scrollIntoView()}
+                  onClick={() => document.getElementById("received")?.scrollIntoView({ behavior: "smooth" })}
                 >
                   Received ({receivedLetters.length})
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => document.getElementById("sent")?.scrollIntoView()}
+                  onClick={() => document.getElementById("sent")?.scrollIntoView({ behavior: "smooth" })}
                 >
                   Sent ({sentLetters.length})
                 </Button>
@@ -206,27 +208,27 @@ export default function Home() {
                 <div id="received" className="space-y-4 mb-8">
                   <h3 className="font-medium text-muted-foreground">Received Letters</h3>
                   {receivedLetters.map((letter) => (
-                    <Card key={letter.id} className="p-4">
+                    <CardComponent key={letter.id} className="p-4">
                       <p className="text-sm text-muted-foreground mb-2">
                         From: {letter.senderName}
                       </p>
                       <p className="whitespace-pre-wrap">{letter.content}</p>
-                    </Card>
+                    </CardComponent>
                   ))}
                 </div>
                 <div id="sent" className="space-y-4">
                   <h3 className="font-medium text-muted-foreground">Sent Letters</h3>
                   {sentLetters.map((letter) => (
-                    <Card key={letter.id} className="p-4">
+                    <CardComponent key={letter.id} className="p-4">
                       <p className="text-sm text-muted-foreground mb-2">
                         To: {letter.recipientName}
                       </p>
                       <p className="whitespace-pre-wrap">{letter.content}</p>
-                    </Card>
+                    </CardComponent>
                   ))}
                 </div>
               </ScrollArea>
-            </Card>
+            </CardComponent>
           </motion.div>
         </div>
       </div>
