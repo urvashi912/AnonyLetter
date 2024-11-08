@@ -11,12 +11,24 @@ app.get('/', (req, res) => {
   res.send('Hello, WebSocket server is running!');
 });
 
-const server = createServer(app); // Use Express app with HTTP server
+const server = createServer(app);
 
 const wss = new WebSocket.Server({ noServer: true });
 
 const onlineUsers = new Map();
 const letters = new Map();
+
+function broadcastOnlineCount() {
+  const count = onlineUsers.size;
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ 
+        type: 'online_count', 
+        count 
+      }));
+    }
+  });
+}
 
 wss.on('connection', (ws) => {
   let userId = null;
@@ -28,8 +40,12 @@ wss.on('connection', (ws) => {
       case 'join':
         userId = Math.random().toString(36).substr(2, 9);
         onlineUsers.set(userId, { name: data.name, ws });
+        
+        // First send joined confirmation to the user
         ws.send(JSON.stringify({ type: 'joined', userId }));
-        broadcastOnlineCount();
+        
+        // Then immediately broadcast the updated count to all clients
+        setTimeout(() => broadcastOnlineCount(), 100);
         break;
 
       case 'letter':
@@ -65,31 +81,29 @@ wss.on('connection', (ws) => {
           type: 'letter_sent',
           letter
         }));
+        
+        // Broadcast online count after letter is sent
+        broadcastOnlineCount();
         break;
     }
   });
 
+  // Send initial online count to the new connection
+  ws.send(JSON.stringify({ 
+    type: 'online_count', 
+    count: onlineUsers.size 
+  }));
+
   ws.on('close', () => {
     if (userId) {
       onlineUsers.delete(userId);
-      broadcastOnlineCount();
+      // Broadcast updated count when user disconnects
+      setTimeout(() => broadcastOnlineCount(), 100);
     }
   });
-
-  function broadcastOnlineCount() {
-    const count = onlineUsers.size;
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ 
-          type: 'online_count', 
-          count 
-        }));
-      }
-    });
-  }
 });
 
-// Handle WebSocket upgrades (ensure it's handled after HTTP server)
+// Handle WebSocket upgrades
 server.on('upgrade', (request, socket, head) => {
   const { pathname } = parse(request.url);
 
