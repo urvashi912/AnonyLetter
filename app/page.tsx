@@ -45,6 +45,9 @@ export default function Home() {
         const data = JSON.parse(event.data);
 
         switch (data.type) {
+          case "joined":
+            setOnlineCount(data.count);
+            break;
           case "online_count":
             setOnlineCount(data.count);
             break;
@@ -79,6 +82,9 @@ export default function Home() {
         const data = JSON.parse(event.data);
 
         switch (data.type) {
+          case "joined":
+            setOnlineCount(data.count);
+            break;
           case "online_count":
             setOnlineCount(data.count);
             break;

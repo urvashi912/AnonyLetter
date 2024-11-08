@@ -78,14 +78,14 @@ wss.on('connection', (ws) => {
           userId = Math.random().toString(36).substr(2, 9);
           onlineUsers.set(userId, { name: data.name, ws });
           
-          // Send joined confirmation
+          // Send joined confirmation AND online count in the same message
           ws.send(JSON.stringify({ 
             type: 'joined', 
             userId,
-            onlineCount: onlineUsers.size 
+            count: onlineUsers.size
           }));
           
-          // Broadcast new count immediately
+          // Broadcast to all other clients
           broadcastOnlineCount();
           break;
 
